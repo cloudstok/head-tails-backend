@@ -61,6 +61,15 @@ export interface AccountResult {
     txn_id?: string
 }
 
+export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+
+export interface LogEntry {
+    time: number;
+    level: LogLevel;
+    name: string;
+    msg: string;
+};
+
 interface DBConfig {
     host: string;
     user: string;

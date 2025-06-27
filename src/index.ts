@@ -7,7 +7,9 @@ import { initializeRedis } from "./utils/redisConnection";
 import { connect } from "./utils/amqp";
 import { checkDatabaseConnection, createTable } from "./utils/dbConnection";
 import { routes } from "./routes/routes";
+import { createLogger } from "./utils/loggers";
 
+const logger = createLogger('Server');
 
 const port = process.env.PORT
 const initServer = async () => {
@@ -23,7 +25,7 @@ const initServer = async () => {
     app.use(routes);
 
     server.listen(port, () => {
-    console.log(`Server is running on port: ${port}`);
+    logger.info(`Server is running on port: ${port}`);
 })
 
 }

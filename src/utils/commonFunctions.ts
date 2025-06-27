@@ -2,6 +2,9 @@ import crypto from "crypto";
 import { BetData, WebhookKey, WebhookData, PlayerDetails, AccountResult } from "../interface/interface";
 import axios, { AxiosRequestConfig } from "axios";
 import { sendToQueue } from "./amqp";
+import { createLogger } from "./loggers";
+const thirdPartyLogger = createLogger('ThirdPartyRequest', 'jsonl');
+const failedThirdPartyLogger = createLogger('FailedThirdPartyRequest', 'jsonl');
 
 export const generateUUIDv7 = () => {
     const timeStamp = Date.now();
@@ -71,7 +74,6 @@ export const updateBalanceFromAccount = async (data: BetData, key: WebhookKey, p
 
         data.txn_id = webhookData.txn_id;
         const sendRequest = await sendRequestToAccount(webhookData, playerDetails.token);
-        console.log('called request')
         if (!sendRequest) return { status: false, type: key };
 
         return { status: true, type: key, txn_id: data.txn_id }
@@ -83,7 +85,6 @@ export const updateBalanceFromAccount = async (data: BetData, key: WebhookKey, p
 
 export const sendRequestToAccount = async (webhookData: WebhookData, token: string): Promise<Boolean> => {
     try {
-        console.log('came to send request')
         let clientServerOption: AxiosRequestConfig = {
             method: 'POST',
             url: `${process.env.BASE_URL}/service/operator/user/balance/v2`,
@@ -94,11 +95,13 @@ export const sendRequestToAccount = async (webhookData: WebhookData, token: stri
             timeout: 5000
         }
         const data = (await axios(clientServerOption)).data;
-        console.log('leaving send request:  ', data)
+        thirdPartyLogger.info(JSON.stringify({ logId: generateUUIDv7(), req: clientServerOption, res: data }));
         if (!data.status) return false
         return true;
     } catch (err: any) {
-        console.error(`Err while sending request to accounts is:::`, err.message);
+        console.error(`Err while sending request to accounts is :`, err.message);
+        failedThirdPartyLogger.error(JSON.stringify({ logId: generateUUIDv7(), req: { webhookData, token }, res: err?.response?.status }));
+
         return false;
     }
 }

@@ -1,4 +1,3 @@
-import { RowDataPacket } from "mysql2";
 import { Settlement } from "../../interface/interface"
 import { read, write } from "../../utils/dbConnection";
 
@@ -23,18 +22,15 @@ export const insertData = async (data: Settlement) => {
     }
 };
 
-export const readData = async (user_id: string, operator_id: string, limit: number = 10): Promise<any[] | undefined> => {
+export const readData = async (user_id: string, operator_id: string, limit?: number): Promise<any[] | undefined> => {
     try {
-        console.log('user_id', user_id)
-        console.log('operator_id', operator_id)
-        console.log('limit', limit)
-        const SQL_READ_QUERY = `select * from settlement where user_id = ? AND operator_id = ? LIMIT ${Number(limit)}`
+        const SQL_READ_QUERY = `select * from settlement where user_id = ? AND operator_id = ? order by created_at DESC LIMIT ${limit}`
         const data = await read(SQL_READ_QUERY, [user_id, operator_id]);
         if (!data) {
             console.log(`Error from read data :Data not found for user_id : ${user_id} and operator_id : ${operator_id}`);
             return 
         } else {
-            console.log(`Data read successfully for user_id : ${user_id} and ${operator_id}`);
+            console.log(`Data read successfully for us  er_id : ${user_id} and ${operator_id}`);
             return data
         };
 

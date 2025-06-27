@@ -2,7 +2,10 @@ import Redis from "ioredis";
 import type { RedisOptions, Redis as RedisClient } from "ioredis";
 import dotenv from "dotenv";
 import { appConfig } from "./appConfig";
+import { createLogger } from "./loggers";
 dotenv.config();
+
+const logger = createLogger('Redis');
 
 const {
     host = '127.0.0.1',
@@ -23,16 +26,15 @@ const createRedisClient = (): RedisClient => {
     const client = new Redis(redisConfig);
 
     client.on('connect', async () => {
-        ;
-        console.log("Redis Connection established");
+       logger.info("Redis Connection established");
     });
 
     client.on('error', (err: Error) => {
-        console.log('Error occured while connecting redis', err.message);
+        logger.error('Error occured while connecting redis', err.message);
     })
 
     client.on('close', () => {
-        console.log('Redis connection closed');
+        logger.info('Redis connection closed');
     })
     return client;
 }
@@ -47,13 +49,13 @@ export const initializeRedis = async (): Promise<RedisClient> => {
             redisClient = createRedisClient();
             await redisClient.set('test', 'test1');
             await redisClient.del('test');
-            console.log('Redis Connected Successfully');
+            logger.info('Redis Connected Successfully');
             return redisClient;
         } catch (err: any) {
             retries += 1;
-            console.error(`Redis Connection Error. Retries left ${retries}/${max_retries}`, `Error :${err.message}`);
+            logger.error(`Redis Connection Error. Retries left ${retries}/${max_retries}`, `Error :${err.message}`);
             if (retries >= max_retries) {
-                console.log('Maximun retries reached. Could not connect to redis');
+                logger.error('Maximun retries reached. Could not connect to redis');
                 process.exit(1);
             }
         }
@@ -69,7 +71,7 @@ export const setCache = async (key: string, value: string, expiration: number = 
     try {
         await redisClient.set(key, value, 'EX', expiration);
     } catch (err: any) {
-        console.log("Failed setting cache", err.message);
+        logger.error("Failed setting cache", err.message);
     }
 }
 
@@ -78,12 +80,12 @@ export const getCache = async (key: string): Promise<string | null> => {
     try {
         const value = await redisClient.get(key);
         if (!value) {
-            console.log(`Cache not found: ${key}`);
+            logger.info(`Cache not found: ${key}`);
             return null
         }
         return value;
     } catch (err: any) {
-        console.log(`Failed getting cache1 for ${key}`);
+        logger.error(`Failed getting cache1 for ${key}`);
         return null
     }
 }
@@ -93,8 +95,7 @@ export const deleteCache = async (key: string) => {
     if (!redisClient) redisClient = await initializeRedis();
     try {
         await redisClient.del(key);
-        console.log("Cache deleted");
     } catch (err: any) {
-        console.log("Failed to delete the cache", err.message);
+       logger.error("Failed to delete the cache", err.message);
     }
 }

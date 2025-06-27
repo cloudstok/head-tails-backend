@@ -1,4 +1,7 @@
 import amqp, { Channel, Options } from "amqplib";
+import { createLogger } from "./loggers";
+
+const rabbitMQLogger = createLogger("Queue");
 
 let pubChannel: Channel | null = null;
 let subChannel: Channel | null = null;
@@ -21,9 +24,10 @@ export const connect = async (): Promise<void> => {
     if (connected && pubChannel && subChannel) return;
 
     try {
-        console.log('RabbitMQ server is getting connected...');
+        rabbitMQLogger.info("⌛️ Connecting to Rabbit-MQ Server", AMQP_CONNECTION_STRING.split("@")[1]);
         const connection = await amqp.connect(AMQP_CONNECTION_STRING);
-        console.log('RabbitMQ server is connection is ready ');
+        rabbitMQLogger.info("✅ Rabbit MQ Connection is ready");
+
         [pubChannel, subChannel] = await Promise.all([
             connection.createChannel(),
             connection.createChannel()
@@ -40,31 +44,32 @@ export const connect = async (): Promise<void> => {
         subChannel.removeAllListeners('error');
 
         pubChannel.on('close', async () => {
-            console.log('Publish Channel Closed');
+            console.error('Publish Channel Closed');
             pubChannel = null;
             connected = false;
         })
 
         pubChannel.on('error', (msg: unknown) => {
-            console.log(`Publish Channel Error: `, msg);
+            console.error(`Publish Channel Error: `, msg);
         })
 
         subChannel.on('close', async () => {
-            console.log('Subscribe Channel Closed');
+            console.error('Subscribe Channel Closed');
             subChannel = null;
             connected = false;
             setTimeout(() => initQueue(), 1000);
         })
 
         subChannel.on('error', (msg: unknown) => {
-            console.log(`Subscribe Channel Error: `, msg);
+            console.error(`Subscribe Channel Error: `, msg);
         })
 
-        console.log('RabbitMQ connected successfully');
+        rabbitMQLogger.info("🛸 Created RabbitMQ Channel successfully");
         connected = true;
 
     } catch (err: any) {
-        console.log('Error while connection to RabbitMQ server ...',err.message);
+        rabbitMQLogger.error(err);
+        rabbitMQLogger.error("Not connected to MQ Server");
     }
 
 }

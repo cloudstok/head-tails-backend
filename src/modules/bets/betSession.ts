@@ -6,6 +6,9 @@ import { updateBalanceFromAccount } from "../../utils/commonFunctions";
 import { calculateWinnings, getUserIP } from "../../utils/helperFunctions";
 import { appConfig } from "../../utils/appConfig";
 import { insertData } from "./betDb";
+import { createLogger } from "../../utils/loggers";
+
+const logger = createLogger('Bets', 'jsonl');
 
 export const placeBet = async (socket: Socket, data: reqData) => {
     try {
@@ -38,6 +41,7 @@ export const placeBet = async (socket: Socket, data: reqData) => {
 
         if (!webhookData.status) return socket.emit("bet_error", "message : Bet Cancelled by Upstream while debiting from balance ");
         parsedPlayerDetails.balance -= btAmt;
+        logger.info(`Bet Placed Successfully => player : ${JSON.stringify(parsedPlayerDetails)}, bet_amount : ${btAmt}, choice : ${choice}`);
         await setCache(`PL:${socket.id}`, JSON.stringify(parsedPlayerDetails));
 
         socket.emit('info', {
@@ -48,6 +52,7 @@ export const placeBet = async (socket: Socket, data: reqData) => {
 
         // Bet Result   
         const { betAmt, winAmt, mult, status, result } = await calculateWinnings(data);
+        logger.info(`Winnings calculated for PL:${decodeURIComponent(userId)}. Status: ${status}, WinAmt: ${winAmt}, Multiplier: ${mult}, Result: ${result}`);
         const txn_id = webhookData.txn_id;
 
         if (status == "win") {
@@ -65,6 +70,7 @@ export const placeBet = async (socket: Socket, data: reqData) => {
             }))
         }
         parsedPlayerDetails.balance += winAmt;
+        logger.info(`Won the bet : Credited winning_amount ${winAmt} from the balance for PL:${decodeURIComponent(userId)}`)
         await setCache(`PL: ${socket.id}`, JSON.stringify(parsedPlayerDetails));
         setTimeout(() => {
             socket.emit('info', {
@@ -92,9 +98,10 @@ export const placeBet = async (socket: Socket, data: reqData) => {
             status,
             result
         }
+
         await insertData(dbObj);
 
     } catch (err: any) {
-        console.log('Error in place bets', err.message);
+        logger.error('Error in placing bets',err.message);
     }
 } 

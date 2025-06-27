@@ -8,11 +8,17 @@ routes.get('/', async (req, res) => {
 
 routes.get('/games-history', async (req, res) => {
     try {
-        const { user_id, operator_id, limit } = req.query;
+        const { user_id, operator_id, limit } = req.query as {
+            user_id: string;
+            operator_id: string;
+            limit?: string;
+        };
         if (!user_id || !operator_id){
             res.status(400).json({status : false, message: 'Required params : user_id and operator_id'});
-        };
-        const result = await readData(user_id as string, operator_id as string, limit ? Number(limit) :10);
+        };  
+
+        const parsedLimit = limit ? parseInt(limit,10): 10
+        const result = await readData(user_id, operator_id,parsedLimit);
         if(!result || result.length === 0) {
              res.status(404).json({status: false, data: result})
         }
