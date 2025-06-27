@@ -64,7 +64,7 @@ export const connect = async (): Promise<void> => {
         connected = true;
 
     } catch (err: any) {
-        console.log('Error while connection to RabbitMQ server ...');
+        console.log('Error while connection to RabbitMQ server ...',err.message);
     }
 
 }

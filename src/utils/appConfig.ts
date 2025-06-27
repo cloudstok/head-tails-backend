@@ -34,7 +34,7 @@ export const appConfig: AppConfig = {
     redis: {
         host: requireEnv("REDIS_HOST"),
         port: requireNumberEnv("REDIS_PORT"),
-        retry: requireNumberEnv("REDIS_RETRy"),
+        retry: requireNumberEnv("REDIS_RETRY"),
         interval: requireNumberEnv("REDIS_RETRY_INTERVAL")
     }
 }

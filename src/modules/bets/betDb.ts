@@ -1,5 +1,6 @@
+import { RowDataPacket } from "mysql2";
 import { Settlement } from "../../interface/interface"
-import { write } from "../../utils/dbConnection";
+import { read, write } from "../../utils/dbConnection";
 
 const SQL_INSERT_QUERY = 'INSERT INTO settlement (user_id, round_id, operator_id, bet_on, bet_amount, winning_amount, multiplier, status, result) VALUES (?,?,?,?,?,?,?,?,?)'
 export const insertData = async (data: Settlement) => {
@@ -20,4 +21,25 @@ export const insertData = async (data: Settlement) => {
     } catch (err: any) {
         console.log('Error inserting the data :', err.message);
     }
+};
+
+export const readData = async (user_id: string, operator_id: string, limit: number = 10): Promise<any[] | undefined> => {
+    try {
+        console.log('user_id', user_id)
+        console.log('operator_id', operator_id)
+        console.log('limit', limit)
+        const SQL_READ_QUERY = `select * from settlement where user_id = ? AND operator_id = ? LIMIT ${Number(limit)}`
+        const data = await read(SQL_READ_QUERY, [user_id, operator_id]);
+        if (!data) {
+            console.log(`Error from read data :Data not found for user_id : ${user_id} and operator_id : ${operator_id}`);
+            return 
+        } else {
+            console.log(`Data read successfully for user_id : ${user_id} and ${operator_id}`);
+            return data
+        };
+
+    } catch (err: any) {
+        console.log('Error from read data :', err.message);
+    }
+
 };

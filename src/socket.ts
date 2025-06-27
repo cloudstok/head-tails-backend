@@ -22,7 +22,6 @@ export function socket(io: Server) {
             return;
         }
 
-
         socket.emit('info', {
             user_id: userData?.userId,
             operator_id: userData?.operatorId,

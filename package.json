@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint ./src --ext .ts"
+    "start": "ts-node src/index.ts",
+    "server": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "lint": "eslint ./src --ext .ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +30,9 @@
     "@typescript-eslint/parser": "^8.34.0",
     "eslint": "^9.29.0",
     "globals": "^16.2.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
     "typescript-eslint": "^8.34.0"
   }
 }

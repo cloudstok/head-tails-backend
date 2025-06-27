@@ -1,4 +1,4 @@
-import { Server, Socket } from "socket.io"
+import { Socket } from "socket.io"
 import { reqData } from "../interface/interface"
 import { placeBet } from "../modules/bets/betSession"
 
