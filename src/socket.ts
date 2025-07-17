@@ -26,7 +26,7 @@ export function socket(io: Server) {
         }
 
         socket.emit('info', {
-            user_id: userData?.userId,
+            user_id: userData?.user_id,
             operator_id: userData?.operatorId,
             balance: userData?.balance
         });

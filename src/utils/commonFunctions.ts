@@ -31,7 +31,7 @@ export const prepareDataForWebhook = async (data: BetData, key: WebhookKey): Pro
         let baseData: WebhookData = {
             txn_id: generateUUIDv7(),
             game_id,
-            user_id: decodeURIComponent(user_id)
+            user_id
         }
 
         switch (key) {

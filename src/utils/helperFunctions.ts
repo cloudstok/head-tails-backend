@@ -1,4 +1,4 @@
-import { reqData, BetResult } from "../interface/interface";
+import { reqData } from "../interface/interface";
 
 export const getUserIP = (socket: any): string => {
     const forwardedFor = socket.handshake.headers?.['x-forwarded-for'];
@@ -20,7 +20,7 @@ export const calculateWinnings = async (data: reqData) => {
         winAmt: 0,
         mult: 0,
         status: "loss" as "win" | "loss",
-        result: winningNumber
+        result:winningNumber
     };
     if (winningNumber == data.choice) {
         finalObj.status = "win";
