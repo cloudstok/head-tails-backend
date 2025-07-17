@@ -69,9 +69,12 @@ export const placeBet = async (socket: Socket, data: reqData) => {
                 operatorId: operatorId,
                 token: token
             }))
+             logger.info(`Won the bet : Credited winning_amount ${winAmt} from the balance for PL:${user_id}`)
+        }else {
+            logger.info(`lost the bet : Debited bettingamount  ${betAmt} from the balance for PL:${user_id}`)
         }
         parsedPlayerDetails.balance += winAmt;
-        logger.info(`Won the bet : Credited winning_amount ${winAmt} from the balance for PL:${user_id}`)
+       
         await setCache(`PL: ${socket.id}`, JSON.stringify(parsedPlayerDetails));
         setTimeout(() => {
             socket.emit('info', {
