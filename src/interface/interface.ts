@@ -1,39 +1,38 @@
 export interface UserData {
-    user_id: string,
-    operatorId: string,
-    balance: string
+    user_id: string;
+    operatorId: string;
+    balance: string;
 }
 
 export interface FinalUserData extends UserData {
-    userId: string,
-    game_id: string,
-    token: string
+    game_id: string;
+    token: string;
 }
 
 export interface reqData {
-    choice: 0 | 1,
-    btAmt: number
+    choice: 0 | 1;
+    btAmt: number;
 }
 
 export type WebhookKey = 'CREDIT' | 'DEBIT';
 
 export interface BetData {
-    id: string,
-    bet_amount?: number,
-    winning_amount?: number,
-    game_id?: string,
-    ip?: string,
-    user_id?: string,
-    txn_id?: string,
-    bet_id?: string
+    id: string;
+    bet_amount?: number;
+    winning_amount?: number;
+    game_id?: string;
+    ip?: string;
+    user_id?: string;
+    txn_id?: string;
+    bet_id?: string;
 }
 
 export interface BetResult {
     status: "win" | "loss";
     betAmt: number;
     winAmt: number;
-    mult: number
-    error?: string
+    mult: number;
+    error?: string;
 }
 
 export interface WebhookData {
@@ -52,13 +51,13 @@ export interface WebhookData {
 export interface PlayerDetails {
     game_id: string;
     operatorId: string;
-    token: string
+    token: string;
 };
 
 export interface AccountResult {
-    status: boolean,
-    type: string,
-    txn_id?: string
+    status: boolean;
+    type: string;
+    txn_id?: string;
 }
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
@@ -103,6 +102,6 @@ export interface Settlement {
     bet_amount: number;
     winning_amount?: number;
     multiplier: number;
-    status: "win" | "loss"
-    result?: number
+    status: "win" | "loss";
+    result?: number;
 }

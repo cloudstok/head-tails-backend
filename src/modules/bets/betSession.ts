@@ -17,7 +17,7 @@ export const placeBet = async (socket: Socket, data: reqData) => {
             return socket.emit('bet_error', 'Invalid User');
         }
         const parsedPlayerDetails = JSON.parse(playerDetails);
-        const { userId, operatorId, token, game_id, balance } = parsedPlayerDetails;
+        const { user_id, operatorId, token, game_id, balance } = parsedPlayerDetails;
         const { btAmt, choice } = data;
 
         if (isNaN(Number(btAmt))) return socket.emit("bet_error", "message : Invalid Bet amount type");
@@ -36,7 +36,7 @@ export const placeBet = async (socket: Socket, data: reqData) => {
             bet_amount: btAmt,
             game_id,
             ip: userIP,
-            user_id: userId
+            user_id
         }, "DEBIT", { game_id, operatorId, token });
 
         if (!webhookData.status) return socket.emit("bet_error", "message : Bet Cancelled by Upstream while debiting from balance ");
@@ -45,14 +45,14 @@ export const placeBet = async (socket: Socket, data: reqData) => {
         await setCache(`PL:${socket.id}`, JSON.stringify(parsedPlayerDetails));
 
         socket.emit('info', {
-            user_id: userId,
+            user_id,
             operator_id: operatorId,
             balance: parsedPlayerDetails.balance
         });
 
         // Bet Result   
         const { betAmt, winAmt, mult, status, result } = await calculateWinnings(data);
-        logger.info(`Winnings calculated for PL:${decodeURIComponent(userId)}. Status: ${status}, WinAmt: ${winAmt}, Multiplier: ${mult}, Result: ${result}`);
+        logger.info(`Winnings calculated for PL:${user_id}. Status: ${status}, WinAmt: ${winAmt}, Multiplier: ${mult}, Result: ${result}`);
         const txn_id = webhookData.txn_id;
 
         if (status == "win") {
@@ -62,35 +62,40 @@ export const placeBet = async (socket: Socket, data: reqData) => {
                 bet_amount: betAmt,
                 winning_amount: winAmt,
                 game_id: game_id,
-                user_id: userId
+                user_id
             }, "CREDIT", ({
                 game_id: game_id,
                 operatorId: operatorId,
                 token: token
             }))
-            logger.info(`Won the bet : Credited winning_amount ${winAmt} from the balance for PL:${decodeURIComponent(userId)}`)
+            logger.info(`Won the bet : Credited winning_amount ${winAmt} in the balance for PL:${user_id}`)
         } else {
-            logger.info(`Lost the bet for PL:${decodeURIComponent(userId)}`)
+            logger.info(`lost the bet : Debited betting_amount ${betAmt} from the balance for PL:${user_id}`)
         }
         parsedPlayerDetails.balance += winAmt;
-        await setCache(`PL:${socket.id}`, JSON.stringify(parsedPlayerDetails));
-        setTimeout(() => {
-            socket.emit('info', {
-                user_id: userId,
-                operator_id: operatorId,
-                balance: parsedPlayerDetails.balance
-            });
-        }, 2000);
+
+        await setCache(`PL: ${socket.id}`, JSON.stringify(parsedPlayerDetails));
+
+        if (status === 'win') {
+            setTimeout(() => {
+                socket.emit('info', {
+                    user_id,
+                    operator_id: operatorId,
+                    balance: parsedPlayerDetails.balance
+                });
+            }, 2000);
+        }
 
         socket.emit("result", {
             status: status,
             winAmt: winAmt || 0.00,
             mult: mult || 0.00,
+            coinResult: result
         });
 
         // Insert Data
         const dbObj: Settlement = {
-            user_id: decodeURIComponent(userId),
+            user_id,
             round_id: roundId,
             operator_id: operatorId,
             bet_on: choice,

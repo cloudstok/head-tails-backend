@@ -6,7 +6,7 @@ export const insertData = async (data: Settlement) => {
     try {
         const { user_id, round_id, operator_id, bet_on, bet_amount, winning_amount, multiplier, status, result } = data;
         await write(SQL_INSERT_QUERY, [
-            decodeURIComponent(user_id),
+            user_id,
             round_id,
             operator_id,
             bet_on,
@@ -22,7 +22,7 @@ export const insertData = async (data: Settlement) => {
     }
 };
 
-export const readData = async (user_id: string, operator_id: string, limit?: number): Promise<any[] | undefined> => {
+export const readData = async (user_id: string, operator_id: string, limit: number): Promise<any[] | undefined> => {
     try {
         const SQL_READ_QUERY = `select * from settlement where user_id = ? AND operator_id = ? order by created_at DESC LIMIT ${limit}`
         const data = await read(SQL_READ_QUERY, [user_id, operator_id]);
@@ -30,7 +30,7 @@ export const readData = async (user_id: string, operator_id: string, limit?: num
             console.log(`Error from read data :Data not found for user_id : ${user_id} and operator_id : ${operator_id}`);
             return 
         } else {
-            console.log(`Data read successfully for us  er_id : ${user_id} and ${operator_id}`);
+            console.log(`Data read successfully Player_id : ${user_id} and ${operator_id}`);
             return data
         };
 

@@ -11,10 +11,9 @@ export const fetchUserDetails = async (token: string, game_id: string): Promise<
         const userDetails: UserData | undefined = response.data.user;
 
         if (userDetails) {
-            const userId = encodeURIComponent(userDetails.user_id);
+        
             const finalUserData: FinalUserData | undefined = {
                 ...userDetails,
-                userId,
                 game_id,
                 token
             }
