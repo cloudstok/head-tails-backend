@@ -18,7 +18,6 @@ export const placeBet = async (socket: Socket, data: reqData) => {
         }
         const parsedPlayerDetails = JSON.parse(playerDetails);
         const { user_id, operatorId, token, game_id, balance } = parsedPlayerDetails;
-        console.log('game', game_id)
         const { btAmt, choice } = data;
 
         if (isNaN(Number(btAmt))) return socket.emit("bet_error", "message : Invalid Bet amount type");
@@ -69,9 +68,9 @@ export const placeBet = async (socket: Socket, data: reqData) => {
                 operatorId: operatorId,
                 token: token
             }))
-             logger.info(`Won the bet : Credited winning_amount ${winAmt} from the balance for PL:${user_id}`)
+             logger.info(`Won the bet : Credited winning_amount ${winAmt} in the balance for PL:${user_id}`)
         }else {
-            logger.info(`lost the bet : Debited bettingamount  ${betAmt} from the balance for PL:${user_id}`)
+            logger.info(`lost the bet : Debited betting_amount ${betAmt} from the balance for PL:${user_id}`)
         }
         parsedPlayerDetails.balance += winAmt;
        
@@ -87,7 +86,7 @@ export const placeBet = async (socket: Socket, data: reqData) => {
         socket.emit("result", {
             status: status,
             winAmt: winAmt || 0.00,
-            mult: mult || 0.00,    
+            mult: mult || 0.00,
             coinResult: result
         });
 
