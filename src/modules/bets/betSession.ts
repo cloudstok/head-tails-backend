@@ -1,8 +1,8 @@
+
 import { reqData, Settlement } from "../../interface/interface";
 import { getCache, setCache } from "../../utils/redisConnection";
 import { Socket } from "socket.io";
-import { generateUUIDv7 } from "../../utils/commonFunctions";
-import { updateBalanceFromAccount } from "../../utils/commonFunctions";
+import { generateUUIDv7, updateBalanceFromAccount } from "../../utils/commonFunctions";
 import { calculateWinnings, getUserIP } from "../../utils/helperFunctions";
 import { appConfig } from "../../utils/appConfig";
 import { insertData } from "./betDb";
@@ -10,28 +10,42 @@ import { createLogger } from "../../utils/loggers";
 
 const logger = createLogger('Bets', 'jsonl');
 
+const validateBet = (btAmt: number, choice: number, balance: number, socket: Socket): boolean => {
+    if (isNaN(btAmt)) {
+        socket.emit("bet_error", "message : Invalid Bet amount type");
+        return false;
+    }
+    if (btAmt > balance) {
+        socket.emit("bet_error", "message : Insufficient Balance");
+        return false;
+    }
+    if (btAmt < appConfig.minBetAmount || btAmt > appConfig.maxBetAmount) {
+        socket.emit("bet_error", "message : Invalid bet amount.");
+        return false;
+    }
+    if (![0, 1].includes(choice)) {
+        socket.emit("bet_error", "message : Invalid choice. Must be 0 (tails) or 1 (heads).");
+        return false;
+    }
+    return true;
+};
+
 export const placeBet = async (socket: Socket, data: reqData) => {
     try {
-        const playerDetails = await getCache(`PL:${socket.id}`);
-        if (!playerDetails) {
-            return socket.emit('bet_error', 'Invalid User');
-        }
-        const parsedPlayerDetails = JSON.parse(playerDetails);
-        const { user_id, operatorId, token, game_id, balance } = parsedPlayerDetails;
+        const cacheKey = `PL:${socket.id}`;
+        const playerCache = await getCache(cacheKey);
+        if (!playerCache) return socket.emit('bet_error', 'Invalid User');
+
+        const player = JSON.parse(playerCache);
+        const { user_id, operatorId, token, game_id, balance } = player;
         const { btAmt, choice } = data;
 
-        if (isNaN(Number(btAmt))) return socket.emit("bet_error", "message : Invalid Bet amount type");
-        if (btAmt > Number(balance)) return socket.emit("bet_error", "message : Insufficient Balance");
-        if (btAmt < appConfig.minBetAmount || btAmt > appConfig.maxBetAmount) {
-            return socket.emit("bet_error", "message : Invalid bet amount.");
-        }
-        if (![0, 1].includes(choice)) {
-            return socket.emit("bet_error", "message : Invalid choice. Must be 0 (tails) or 1 (heads).");
-        }
+        if (!validateBet(btAmt, choice, balance, socket)) return;
 
         const roundId = generateUUIDv7();
         const userIP = getUserIP(socket);
-        const webhookData = await updateBalanceFromAccount({
+
+        const debitRes = await updateBalanceFromAccount({
             id: roundId,
             bet_amount: btAmt,
             game_id,
@@ -39,76 +53,72 @@ export const placeBet = async (socket: Socket, data: reqData) => {
             user_id
         }, "DEBIT", { game_id, operatorId, token });
 
-        if (!webhookData.status) return socket.emit("bet_error", "message : Bet Cancelled by Upstream while debiting from balance ");
-        parsedPlayerDetails.balance -= btAmt;
-        logger.info(`Bet Placed Successfully => player : ${JSON.stringify(parsedPlayerDetails)}, bet_amount : ${btAmt}, choice : ${choice}`);
-        await setCache(`PL:${socket.id}`, JSON.stringify(parsedPlayerDetails));
+        if (!debitRes.status) {
+            return socket.emit("bet_error", "message : Bet Cancelled by Upstream while debiting from balance ");
+        }
+
+        player.balance -= btAmt;
+        await setCache(cacheKey, JSON.stringify(player));
 
         socket.emit('info', {
             user_id,
             operator_id: operatorId,
-            balance: parsedPlayerDetails.balance
+            balance: player.balance
         });
 
-        // Bet Result   
-        const { betAmt, winAmt, mult, status, result } = await calculateWinnings(data);
-        logger.info(`Winnings calculated for PL:${user_id}. Status: ${status}, WinAmt: ${winAmt}, Multiplier: ${mult}, Result: ${result}`);
-        const txn_id = webhookData.txn_id;
+        logger.info(`Bet Placed | User: ${user_id} | Amount: ${btAmt} | Choice: ${choice}`);
 
-        if (status == "win") {
+        const { betAmt, winAmt, mult, status, result } = await calculateWinnings(data);
+
+        logger.info(`Winnings | User: ${user_id} | Status: ${status} | Win: ${winAmt} | Mult: ${mult} | Result: ${result}`);
+
+        if (status === "win") {
             await updateBalanceFromAccount({
                 id: roundId,
-                txn_id: txn_id,
+                txn_id: debitRes.txn_id,
                 bet_amount: betAmt,
                 winning_amount: winAmt,
-                game_id: game_id,
+                game_id,
                 user_id
-            }, "CREDIT", ({
-                game_id: game_id,
-                operatorId: operatorId,
-                token: token
-            }))
-            logger.info(`Won the bet : Credited winning_amount ${winAmt} in the balance for PL:${user_id}`)
-        } else {
-            logger.info(`lost the bet : Debited betting_amount ${betAmt} from the balance for PL:${user_id}`)
-        }
-        parsedPlayerDetails.balance += winAmt;
+            }, "CREDIT", { game_id, operatorId, token });
 
-        await setCache(`PL: ${socket.id}`, JSON.stringify(parsedPlayerDetails));
+            logger.info(`Winning Credited | User: ${user_id} | Amount: ${winAmt}`);
 
-        if (status === 'win') {
+            player.balance += winAmt;
+            await setCache(cacheKey, JSON.stringify(player));
+
             setTimeout(() => {
                 socket.emit('info', {
                     user_id,
                     operator_id: operatorId,
-                    balance: parsedPlayerDetails.balance
+                    balance: player.balance
                 });
             }, 2000);
+        } else {
+            logger.info(`Bet Lost | User: ${user_id} | Amount: ${betAmt}`);
         }
 
         socket.emit("result", {
-            status: status,
+            status,
             winAmt: winAmt || 0.00,
             mult: mult || 0.00,
             coinResult: result
         });
 
-        // Insert Data
         const dbObj: Settlement = {
             user_id,
             round_id: roundId,
             operator_id: operatorId,
             bet_on: choice,
-            bet_amount: Number(btAmt),
-            winning_amount: Number(winAmt),
-            multiplier: Number(mult),
+            bet_amount: btAmt,
+            winning_amount: winAmt,
+            multiplier: mult,
             status,
             result
-        }
-
+        };
         await insertData(dbObj);
 
     } catch (err: any) {
-        logger.error('Error in placing bets', err.message);
+        logger.error(`placeBet Error: ${err.message}`);
     }
-}
+};
