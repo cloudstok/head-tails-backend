@@ -13,7 +13,7 @@ export function socket(io: Server) {
 
         if (!token || !game_id) {
             socket.disconnect(true);
-            logger.error("Missing parameters :", { token, game_id });
+            logger.error("Missing parameters : token or game_id is required }");
             return;
         }
 
@@ -32,7 +32,6 @@ export function socket(io: Server) {
         });
 
         await setCache(`PL:${socket.id}`, JSON.stringify(userData), 3600);
-        logger.info(`Saved the user details for PL:${socket.id} in Redis`)
 
         eventRouter(socket);
 

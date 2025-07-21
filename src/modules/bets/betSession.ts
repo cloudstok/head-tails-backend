@@ -68,10 +68,12 @@ export const placeBet = async (socket: Socket, data: reqData) => {
                 operatorId: operatorId,
                 token: token
             }))
+            logger.info(`Won the bet : Credited winning_amount ${winAmt} from the balance for PL:${decodeURIComponent(userId)}`)
+        } else {
+            logger.info(`Lost the bet for PL:${decodeURIComponent(userId)}`)
         }
         parsedPlayerDetails.balance += winAmt;
-        logger.info(`Won the bet : Credited winning_amount ${winAmt} from the balance for PL:${decodeURIComponent(userId)}`)
-        await setCache(`PL: ${socket.id}`, JSON.stringify(parsedPlayerDetails));
+        await setCache(`PL:${socket.id}`, JSON.stringify(parsedPlayerDetails));
         setTimeout(() => {
             socket.emit('info', {
                 user_id: userId,
@@ -102,6 +104,6 @@ export const placeBet = async (socket: Socket, data: reqData) => {
         await insertData(dbObj);
 
     } catch (err: any) {
-        logger.error('Error in placing bets',err.message);
+        logger.error('Error in placing bets', err.message);
     }
-} 
+}
