@@ -8,7 +8,7 @@ dotenv.config();
 const logger = createLogger('Redis');
 
 const {
-    host = '127.0.0.1',
+    host = process.env.REDIS_HOST,
     port = 6379,
     retry,
     interval,
@@ -21,12 +21,12 @@ const redisConfig: RedisOptions = {
 }
 
 let redisClient: RedisClient | null = null;
-
+console.log(redisConfig);
 const createRedisClient = (): RedisClient => {
     const client = new Redis(redisConfig);
 
     client.on('connect', async () => {
-       logger.info("Redis Connection established");
+        logger.info("Redis Connection established");
     });
 
     client.on('error', (err: Error) => {
@@ -96,6 +96,6 @@ export const deleteCache = async (key: string) => {
     try {
         await redisClient.del(key);
     } catch (err: any) {
-       logger.error("Failed to delete the cache", err.message);
+        logger.error("Failed to delete the cache", err.message);
     }
 }
